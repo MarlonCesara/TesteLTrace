@@ -1,0 +1,152 @@
+﻿@model WebCRUDMVCSQL.Models.Dados
+
+@{
+    ViewData["Title"] = "Home Page";
+    string seismicdata = ViewBag.DadosSismicos;
+    string seismicdatafixed = ViewBag.DadosSismicosPadrao;
+}
+
+<div class="text-center">
+    <h1 class="display-4">LTrace</h1>
+
+    <form asp-action="ByPass" asp-controller="Dados">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <div class="form-group">
+            <label for="highPassInput">High Pass Filter:</label>
+            <input type="number" id="highPassInput" step="1" class="form-control form-control-sm" name="HighPass" />
+        </div>
+        <div class="form-group">
+            <label for="lowPassInput">Low Pass Filter:</label>
+            <input type="number" id="lowPassInput" step="1"  class="form-control form-control-sm" name="LowPass" />
+        </div>
+    </form>
+
+
+    <canvas id="seismicChart" width="800" height="400"></canvas>
+</div>
+
+
+@section scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        var ctx = document.getElementById('seismicChart').getContext('2d');
+        var seismicDataFixed = [@seismicdatafixed].map(parseFloat);
+        var seismicData = [@seismicdata].map(parseFloat);
+
+        var labelsFixed = [];
+        for (var i = 0; i < seismicDataFixed.length; i++) {
+            labelsFixed.push(i * 4); // Cada amostra tem uma taxa de 4ms
+        }
+
+        var labelsData = [];
+        for (var i = 0; i < seismicData.length; i++) {
+            labelsData.push(i * 4); // Cada amostra tem uma taxa de 4ms
+        }
+
+        var chartConfig = {
+            type: 'line',
+            data: {
+                labels: labelsFixed,
+                datasets: [{
+                    label: 'Dados Sísmicos Fixos',
+                    data: seismicDataFixed,
+                    fill: false,
+                    borderColor: 'blue',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    x: {
+                        type: 'linear',
+                        position: 'bottom',
+                        ticks: {
+                            callback: function (value, index, values) {
+                                return labelsData[index]; // Usar labelsData como rótulos de tempo
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Tempo (ms)'
+                        }
+                    },
+                    y: {
+                        type: 'linear',
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'Amplitude'
+                        }
+                    }
+                }
+            }
+        };
+
+        var chart = new Chart(ctx, chartConfig);
+
+        // Criar um novo chartConfig para seismicData
+        var chartConfig2 = {
+            type: 'line',
+            data: {
+                labels: labelsData,
+                datasets: [{
+                    label: 'Dados Sísmicos',
+                    data: seismicData,
+                    fill: false,
+                    borderColor: 'red',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    x: {
+                        type: 'linear',
+                        position: 'bottom',
+                        ticks: {
+                            callback: function (value, index, values) {
+                                return labelsData[index]; // Usar labelsData como rótulos de tempo
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Tempo (ms)'
+                        }
+                    },
+                    y: {
+                        type: 'linear',
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'Amplitude'
+                        }
+                    }
+                }
+            }
+        };
+
+        chart.data.datasets.push(chartConfig2.data.datasets[0]); // Adicionar o novo conjunto de dados ao gráfico existente
+        chart.update();
+
+
+    </script>
+
+    <script>
+        // Função para acionar o envio do formulário quando um dos inputs é alterado
+        function submitFormOnChange() {
+            var highPassInput = document.getElementById('highPassInput');
+            var lowPassInput = document.getElementById('lowPassInput');
+
+            // Verificar se ambos os campos possuem valor
+            if (highPassInput.value && lowPassInput.value) {
+                document.forms[0].submit();
+            }
+        }
+
+        // Adicionar evento de input para acionar o envio do formulário quando o valor de um dos inputs é alterado
+        document.getElementById('highPassInput').addEventListener('input', submitFormOnChange);
+        document.getElementById('lowPassInput').addEventListener('input', submitFormOnChange);
+
+    </script>
+
+}
